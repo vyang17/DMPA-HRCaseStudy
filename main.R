@@ -49,9 +49,16 @@ summary(dfFinal)
 # set.seed(6)
 # df.imp.noConvert = missForest(df, variablewise = TRUE)
 
+### convert data to correct data types
+dfFinal = 
+  dfFinal %>%
+  select(-c(EmployeeCount, EmployeeID, StandardHours, Over18)) %>%
+  mutate(NumCompaniesWorked = as.integer(NumCompaniesWorked),
+         TotalWorkingYears = as.integer(TotalWorkingYears))
+
+
 ### ggpairs
 ggpairs(dfFinal)
-
 
 
 ### Analysis Idea Questions
