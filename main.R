@@ -3,9 +3,10 @@
 library(tidyverse)
 library(GGally)
 library(caret)
+library(missForest)
 
 # set working directory
-setwd("C:/Users/Victor/Project/hr")
+#setwd("C:/Users/Victor/Project/hr")
 
 # read in data
 generalData = read.csv(file = "./src/general_data.csv", header = T)
@@ -24,6 +25,37 @@ summary(df)
 all(complete.cases(df))
 which(!complete.cases(df)) %>% length()
 
+# look at columns containing missing values; determine if factor or int to prep for missForest
+colnames(df)[c(15,20,25:27)]
+
+### Impute missing values using missForest
+##
+# converted missing variables to factors before missForest
+set.seed(6)
+df.imp = 
+  df %>%
+  mutate_at(c(15,20,25:27), .funs = as.factor) %>% 
+  missForest(variablewise = TRUE)
+
+#check imputation error
+df.imp$OOBerror
+
+# assign imposed dataframe to dfFinal
+dfFinal = df.imp$ximp
+all(complete.cases(dfFinal))
+summary(dfFinal)
+
+# missForest without converting missing variables to factors
+# set.seed(6)
+# df.imp.noConvert = missForest(df, variablewise = TRUE)
+
+### ggpairs
+ggpairs(dfFinal)
+
+
+
+### Analysis Idea Questions
+##
 # How does monthly income relate to an employee's job satisfaction?
 df %>% ggplot(aes(x = as.factor(JobSatisfaction), y = MonthlyIncome)) + 
   geom_boxplot()
@@ -56,7 +88,7 @@ df %>% ggplot(aes(x = JobSatisfaction)) +
 # }
 
 
-
+# correlation plot
 cordf = df %>% select_if(is.numeric) %>% drop_na() %>% cor()
 corrplot(cordf)
                          
