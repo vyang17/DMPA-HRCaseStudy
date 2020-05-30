@@ -87,7 +87,9 @@ dfFinal %>% glimpse()
 #### Iteratively create ggplots against Attrition
 ```{r ggplots}
 ## Iteratively create ggplots
-yVar = "Attrition"
-ggPlotPlease(data = dfFinal, yVar = yVar)
+ggPlotPlease(data = dfFinal, yVar = "Attrition")
 
+dfFinal %>%
+   ggplot(aes(x = Attrition, y = MonthlyIncome)) +
+   geom_boxplot()
 ```

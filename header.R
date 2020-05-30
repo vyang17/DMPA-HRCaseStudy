@@ -1,8 +1,8 @@
-
+# generate a collection of plots from data and yVar
 ggPlotPlease = function(data, yVar) {
 
    xVar = 
-      dfFinal %>% 
+      data %>% 
       select(-c(yVar)) %>% 
       names()
    
@@ -81,6 +81,7 @@ generateModels = function(trainingData, modelNumber = 1, runRF = FALSE, predY = 
       tmplist[[4]] = readRDS(file = paste0("rfModel", modelNumber, ".rds"))
    }
    
+   # set column names to corresponding algorithm
    names(tmplist) = c("tree", "bagged", "lr", "rf")
    
    return(tmplist)

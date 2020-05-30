@@ -80,21 +80,19 @@ dfFinal %>% glimpse()
 # ggpairs(dfFinal)
 
 ## Testing types of plots
-dfFinal %>% 
-  ggplot(aes(x = JobSatisfaction, fill = Attrition)) + 
-  geom_bar()
-
-dfFinal %>%
-  ggplot(aes(x = YearsAtCompany, fill = Attrition)) + 
-  geom_histogram(bins = 30)
+# dfFinal %>% 
+#   ggplot(aes(x = JobSatisfaction, fill = Attrition)) + 
+#   geom_bar()
+# 
+# dfFinal %>%
+#   ggplot(aes(x = YearsAtCompany, fill = Attrition)) + 
+#   geom_histogram(bins = 30)
 
 ## Iteratively create ggplots
-yVar = "Attrition"
-ggPlotPlease(data = dfFinal, yVar = yVar)
+ggPlotPlease(data = dfFinal, yVar = "Attrition")
 
-
-yVar2 = "JobSatisfaction"
-ggPlotPlease(data = dfFinal, yVar = yVar2)
+# yVar2 = "JobSatisfaction"
+# ggPlotPlease(data = dfFinal, yVar = yVar2)
 
 ## create train and testing
 set.seed(144)
@@ -220,7 +218,7 @@ summary(modelList[[2]]$rf)
 predictionsRF2 = predict(modelList[[2]]$rf, newdata = testing2)
 confusionMatrix(predictionsRF2, testing2$Attrition)
 
-plot(varImp(rfModel2))
+plot(varImp(modelList[[2]]$rf))
 
 ## benchmark and dotplot
 results2 = resamples(list(treeModel = modelList[[2]]$tree,
@@ -244,7 +242,7 @@ numericCols =
   names()
 
 ## initialize tmp df to house discretized data
-tmpdf = as_tibble(matrix(NA, nrow = dim(dfFinal3)[1], ncol = length(numericCols)))
+tmpdf = as_tibble(matrix(NA, nrow = nrow(dfFinal3), ncol = length(numericCols)))
 
 ## Assign column names corresponding to correct discretized columns
 names(tmpdf) = paste0(numericCols, "_Group")
@@ -296,42 +294,14 @@ attritionYes = subset(rules, subset = rhs %in% "Attrition=Yes" & lift > 1)
 inspect(head(attritionYes, by = "lift", n = 10))
 summary(attritionYes)
 
-# filter rules to Attrition = "Yes"
+# filter rules to Attrition = "No"
 attritionNo = subset(rules, subset = rhs %in% "Attrition=No" & lift > 1)
 
 inspect(head(attritionNo, by = "lift", n = 10))
 summary(attritionNo)
 
 
-
-
-
-
-
-
-
-
-
-
-### Analysis Idea Questions
-##
-## How does monthly income relate to an employee's job satisfaction?
-df %>% ggplot(aes(x = as.factor(JobSatisfaction), y = MonthlyIncome)) + 
+### Random Additional Usefulness
+dfFinal %>%
+  ggplot(aes(x = Attrition, y = MonthlyIncome)) +
   geom_boxplot()
-
-## Does a person's marital status affect how long they stay with the company?
-df %>% ggplot(aes(x = as.factor(MaritalStatus), y = YearsAtCompany)) +
-  geom_boxplot()
-
-## age vs attrition
-df %>% ggplot(aes(x = as.factor(Attrition), y = Age)) +
-  geom_boxplot()
-
-df %>% ggplot(aes(x = Age, fill = as.factor(Attrition))) +
-  geom_histogram()
-
-## Job Satisfaction
-df %>% ggplot(aes(x = JobSatisfaction)) + 
-  geom_histogram()
-
-
