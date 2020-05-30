@@ -1,0 +1,93 @@
+---
+title: "ggplots of attrition"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+## disable scientific notation
+options(scipen=999)
+
+## load in required libraries
+library(tidyverse)
+library(GGally)
+library(caret)
+library(missForest)
+library(arules)
+
+source(file = "header.R")
+```
+
+#### Read in data, join, impute missing values, adjust data types
+```{r init}
+## read in data
+generalData = read.csv(file = "./src/general_data.csv", header = T)
+employeeSurveyData = read.csv(file = "./src/employee_survey_data.csv", header = T)
+managerSurveyData = read.csv(file = "./src/manager_survey_data.csv", header = T)
+
+## join employee and manager survey data to general data by EmployeeID
+df = generalData %>% 
+  left_join(employeeSurveyData,  by = "EmployeeID") %>% 
+  left_join(managerSurveyData, by = "EmployeeID")
+
+## summary
+summary(df)
+
+## check if df is complete
+all(complete.cases(df))
+which(!complete.cases(df)) %>% length()
+
+## look at columns containing missing values; determine if factor or int to prep for missForest
+colnames(df)[c(15,20,25:27)]
+
+### Impute missing values using missForest
+## uncomment to run, otherwise load from file
+
+## converted missing variables to factors before missForest
+# set.seed(6)
+# df.imp = 
+#   df %>%
+#   mutate_at(c(15,20,25:27), .funs = as.factor) %>% 
+#   missForest(variablewise = TRUE)
+
+# save and load df.imp
+# saveRDS(df.imp, file = "df-imp.rds")
+df.imp = readRDS(file = "df-imp.rds")
+
+## check imputation error
+df.imp$OOBerror
+
+## assign imposed dataframe to dfFinal
+dfFinal = df.imp$ximp
+all(complete.cases(dfFinal))
+summary(dfFinal)
+
+## missForest without converting missing variables to factors
+# set.seed(6)
+# df.imp.noConvert = missForest(df, variablewise = TRUE)
+
+### convert data to correct data types, rearrange attrition to first column, deselect some columns
+dfFinal = 
+  dfFinal %>%
+  select(Attrition, everything(), -c(EmployeeCount, EmployeeID, StandardHours, Over18, JobRole)) %>%
+  mutate(
+    Education = as.factor(Education),
+    JobLevel = as.factor(JobLevel),
+    StockOptionLevel = as.factor(StockOptionLevel),
+    TotalWorkingYears = as.integer(TotalWorkingYears),
+    JobInvolvement = as.factor(JobInvolvement),
+    PerformanceRating = as.factor(PerformanceRating),
+    NumCompaniesWorked = as.integer(NumCompaniesWorked),
+    TotalWorkingYears = as.integer(TotalWorkingYears))
+
+dfFinal %>% glimpse()
+
+```
+
+#### Iteratively create ggplots against Attrition
+```{r ggplots}
+## Iteratively create ggplots
+yVar = "Attrition"
+ggPlotPlease(data = dfFinal, yVar = yVar)
+
+```
