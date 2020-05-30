@@ -1,3 +1,5 @@
+## disable scientific notation
+options(scipen=999)
 
 ## load in required libraries
 library(tidyverse)
@@ -94,7 +96,8 @@ ggPlotPlease(data = dfFinal, yVar = yVar)
 yVar2 = "JobSatisfaction"
 ggPlotPlease(data = dfFinal, yVar = yVar2)
 
-## create train and testing 
+## create train and testing
+set.seed(144)
 in_train = createDataPartition(y = dfFinal$Attrition, 
                                p = 0.8, 
                                list = FALSE)
@@ -102,43 +105,37 @@ in_train = createDataPartition(y = dfFinal$Attrition,
 training = dfFinal[in_train, ]
 testing = dfFinal[-in_train, ]
 
-## logistic regression: full model
-lrModel = train(Attrition ~ .,
-                family = "binomial",
-                data = training,
-                method = "glm",
-                trControl = trainControl(method = "cv",
-                                         number = 10
-                                         )
-                )
+## generate single decision tree, bagging, logistic regression, random forest models
+modelList = list()
+modelList[[1]] = generateModels(training)
 
-summary(lrModel)
-predictionsLR = predict(lrModel, newdata = testing)
+## single tree: model 1 summary
+summary(modelList[[1]]$tree)
+predictionsTree = predict(modelList[[1]]$tree, newdata = testing)
+confusionMatrix(predictionsTree, testing$Attrition)
+
+## bagging: model 1 summary
+summary(modelList[[1]]$bagged)
+predictionsBagged = predict(modelList[[1]]$bagged, newdata = testing)
+confusionMatrix(predictionsBagged, testing$Attrition)
+
+## logistic regression: model 1 summary
+summary(modelList[[1]]$lr)
+predictionsLR = predict(modelList[[1]]$lr, newdata = testing)
 confusionMatrix(predictionsLR, testing$Attrition)
 
-
-## random forest
-rfModel = readRDS(file = "rfModel.rds")
-# rfModel = train(Attrition ~ .,
-#                 data = training,
-#                 method = "rf",
-#                 trControl = trainControl(method = "cv",
-#                                          number = 10
-#                                          )
-#                 )
-# saveRDS(rfModel, file = "rfModel.rds")
-
-
-summary(rfModel)
-predictionsRF = predict(rfModel, newdata = testing)
+## random forest: model 1 summary
+summary(modelList[[1]]$rf)
+predictionsRF = predict(modelList[[1]]$rf, newdata = testing)
 confusionMatrix(predictionsRF, testing$Attrition)
 
-plot(varImp(rfModel))
-
+plot(varImp(modelList[[1]]$rf))
 
 ## benchmark and dotplot
-results = resamples(list(lrModel = lrModel,
-                         rfModel = rfModel))
+results = resamples(list(treeModel = modelList[[1]]$tree,
+                         baggedModel = modelList[[1]]$bagged,
+                         lrModel = modelList[[1]]$lr,
+                         rfModel = modelList[[1]]$rf))
 
 results
 summary(results)
@@ -173,7 +170,7 @@ dfFinal2$TWYQuartiles = discretize(dfFinal2$TotalWorkingYears,
 TWY = model.matrix( ~ TWYQuartiles - 1, data = dfFinal2)
 dfFinal2 = cbind(dfFinal2, TWY)
 
-# split MonthlyIncome into quartiles
+# split MonthlyIncome into thirds
 dfFinal2$IncomeThirds = discretize(dfFinal2$MonthlyIncome,
                                    method = "frequency",
                                    breaks = 3,
@@ -182,15 +179,17 @@ dfFinal2$IncomeThirds = discretize(dfFinal2$MonthlyIncome,
 IncomeBrackets = model.matrix( ~ IncomeThirds - 1, data = dfFinal2)
 dfFinal2 = cbind(dfFinal2, IncomeBrackets)
 
+## investigate any near zero variance columns: age55plus
 nzv(dfFinal2)
 
+## remove 1 in c encoded/discretized variables and nzv variables
 dfFinal2 = dfFinal2 %>%
   select(-c(Age, age55plus, YearsSinceLastPromotion, MonthlyIncome, IncomeThirds, TotalWorkingYears, TWYQuartiles))
 
 
 ## Run models again with new engineered features
-
 ## create train and testing 
+set.seed(144)
 in_train2 = createDataPartition(y = dfFinal2$Attrition, 
                                p = 0.8, 
                                list = FALSE)
@@ -198,47 +197,36 @@ in_train2 = createDataPartition(y = dfFinal2$Attrition,
 training2 = dfFinal2[in_train2, ]
 testing2 = dfFinal2[-in_train2, ]
 
-## logistic regression: full model
-lrModel2 = train(Attrition ~ .,
-                family = "binomial",
-                data = training2,
-                method = "glm",
-                trControl = trainControl(method = "cv",
-                                         number = 10
-                )
-)
+## generate single decision tree, bagging, logistic regression, random forest models 
+modelList[[2]] = generateModels(training2, modelNumber = 2)
 
-summary(lrModel2)
-predictionsLR2 = predict(lrModel2, newdata = testing2)
+## single tree: model 2 summary
+summary(modelList[[2]]$tree)
+predictionsTree2 = predict(modelList[[2]]$tree, newdata = testing2)
+confusionMatrix(predictionsTree2, testing2$Attrition)
+
+## bagging: model 2 summary
+summary(modelList[[2]]$bagged)
+predictionsBagged2 = predict(modelList[[2]]$bagged, newdata = testing2)
+confusionMatrix(predictionsBagged2, testing2$Attrition)
+
+## logistic regression: model 2 summary
+summary(modelList[[2]]$lr)
+predictionsLR2 = predict(modelList[[2]]$lr, newdata = testing2)
 confusionMatrix(predictionsLR2, testing2$Attrition)
 
-
-## random forest
-rfModel2 = readRDS(file = "rfModel2.rds")
-# rfModel2 = train(Attrition ~ .,
-#                 data = training2,
-#                 method = "rf",
-#                 trControl = trainControl(method = "cv",
-#                                          number = 10
-#                                          )
-#                 )
-# saveRDS(rfModel2, file = "rfModel2.rds")
-
-
-summary(rfModel2)
-predictionsRF2 = predict(rfModel2, newdata = testing2)
+## random forest: model 2 summary
+summary(modelList[[2]]$rf)
+predictionsRF2 = predict(modelList[[2]]$rf, newdata = testing2)
 confusionMatrix(predictionsRF2, testing2$Attrition)
 
 plot(varImp(rfModel2))
 
-
 ## benchmark and dotplot
-results2 = resamples(
-  list(
-    lrModel1 = lrModel,
-    rfModel1 = rfModel,
-    lrModel2 = lrModel2,
-    rfModel2 = rfModel2))
+results2 = resamples(list(treeModel = modelList[[2]]$tree,
+                         baggedModel = modelList[[2]]$bagged,
+                         lrModel = modelList[[2]]$lr,
+                         rfModel = modelList[[2]]$rf))
 
 results2
 summary(results2)
@@ -246,14 +234,73 @@ summary(results2)
 dotplot(results2)
 
 
+## Association Rule Mining
+dfFinal3 = dfFinal
+
+## character vector that stores names of numeric columns in dfFinal; used to determine which columns will be discretized
+numericCols = 
+  dfFinal3 %>% 
+  select_if(is.numeric) %>% 
+  names()
+
+## initialize tmp df to house discretized data
+tmpdf = as_tibble(matrix(NA, nrow = dim(dfFinal3)[1], ncol = length(numericCols)))
+
+## Assign column names corresponding to correct discretized columns
+names(tmpdf) = paste0(numericCols, "_Group")
+
+## iterate through numeric columns in dfFinal3 and discretize them
+for( i in 1:length(numericCols)) {
+  tmpdf[,i] = discretize(dfFinal3[,numericCols[i]],
+                         method = "frequency",
+                         breaks = 4)
+}
 
 
+# for( i in 1:length(numericCols)) {
+#   if(numericCols[i] != "Age") {
+#     tmpdf[,i] = discretize(dfFinal3[,numericCols[i]],
+#                            method = "frequency",
+#                            breaks = 4)
+#   } else {
+#     tmpdf[,i] = discretize(dfFinal3[,numericCols[i]],
+#                            method = "interval",
+#                            breaks = 8,
+#                            labels = c("Age_G1", "Age_G2", "Age_G3", "Age_G4", "Age_G5", "Age_G6", "Age_G7", "Age_G8"))
+#   }
+# }
 
+## remove numeric columns from dfFinal and combine with discretized columns
+dfFinal3 = 
+  dfFinal %>%
+  select(-numericCols) %>%
+  cbind(tmpdf)
 
+# make transactions
+hrTrans = as(dfFinal3, 'transactions')
+inspect(head(hrTrans))
+summary(hrTrans)
 
+itemFrequencyPlot(hrTrans, topN = 10, cex = 0.70)
 
+# rules 1: sup = 0.01, conf = 0.60
+rules = apriori(hrTrans,
+                parameter = list(sup = 0.01, conf = 0.60, target = "rules"))
 
+inspect(head(rules))
+summary(rules)
 
+# filter rules to Attrition = "Yes"
+attritionYes = subset(rules, subset = rhs %in% "Attrition=Yes" & lift > 1)
+
+inspect(head(attritionYes, by = "lift", n = 10))
+summary(attritionYes)
+
+# filter rules to Attrition = "Yes"
+attritionNo = subset(rules, subset = rhs %in% "Attrition=No" & lift > 1)
+
+inspect(head(attritionNo, by = "lift", n = 10))
+summary(attritionNo)
 
 
 
@@ -288,7 +335,3 @@ df %>% ggplot(aes(x = JobSatisfaction)) +
   geom_histogram()
 
 
-
-## correlation plot
-# cordf = dfFinal %>% select_if(is.numeric) %>% drop_na() %>% cor()
-# corrplot(cordf)
