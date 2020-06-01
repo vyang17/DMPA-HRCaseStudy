@@ -305,3 +305,85 @@ summary(attritionNo)
 dfFinal %>%
   ggplot(aes(x = Attrition, y = MonthlyIncome)) +
   geom_boxplot()
+
+
+df4 = 
+  dfFinal %>%
+  mutate(Age_Group = discretize(dfFinal$Age,
+                                method = "interval",
+                                breaks = 8,
+                                labels = c("Age_G1", "Age_G2", "Age_G3", "Age_G4", "Age_G5", "Age_G6", "Age_G7", "Age_G8"))) %>%
+  group_by(Age_Group) %>% 
+  summarise(
+    nTotal = n(),
+    nLeft = sum(Attrition == "Yes"),
+    attrPct = round((nLeft / nTotal) * 100, 1))
+
+round(attr(df4$Age_Group, "discretized:breaks"))
+
+avgAttrRate = round(mean(dfFinal$Attrition == "Yes") * 100, 1)
+df4 %>%
+  ggplot(aes(x = Age_Group, y = attrPct)) +
+  geom_col(fill = "#F8766D") +
+  geom_text(aes(label = paste0(attrPct, "%")), 
+            vjust = -0.4) +
+  geom_hline(yintercept = avgAttrRate, 
+             color = "red", 
+             size = 1.2) +
+  geom_text(aes(0,
+                avgAttrRate,
+                label = paste0(avgAttrRate, "%"), 
+                hjust = -0.1,
+                vjust = -0.6)) +
+  theme_minimal()
+
+dfFinal3 %>%
+  ggplot(aes(x = YearsAtCompany_Group, fill = Attrition)) + 
+  geom_bar() +
+  theme_minimal()
+
+dfFinal3 %>%
+  ggplot(aes(x = TotalWorkingYears_Group, fill = Attrition)) + 
+  geom_bar()
+
+dfFinal3 %>%
+  ggplot(aes(x = BusinessTravel, fill = Attrition)) + 
+  geom_bar()
+
+dfBT = 
+  dfFinal3 %>%
+    group_by(BusinessTravel) %>%
+    summarise(
+      nTotal = n(),
+      nLeft = sum(Attrition == "Yes"),
+      attrPct = round((nLeft / nTotal) * 100, 1))
+
+dfBT %>%
+  ggplot(aes(x = BusinessTravel, y = attrPct)) +
+  geom_col(fill = "#F8766D") +
+  geom_text(aes(label = paste0(attrPct, "%")), 
+            vjust = -0.4) +
+  geom_hline(yintercept = avgAttrRate, 
+             color = "red", 
+             size = 1.2) +
+  geom_text(aes(0,
+                avgAttrRate,
+                label = paste0(avgAttrRate, "%"), 
+                hjust = -0.1,
+                vjust = -0.6)) +
+  theme_minimal()
+
+## benchmark and dotplot for ALL models
+resultsAll = resamples(list(treeModel1 = modelList[[1]]$tree,
+                          treeModel2 = modelList[[2]]$tree,
+                          baggedModel1 = modelList[[1]]$bagged,
+                          baggedModel2 = modelList[[2]]$bagged,
+                          lrModel1 = modelList[[1]]$lr,
+                          lrModel2 = modelList[[2]]$lr,
+                          rfModel1 = modelList[[1]]$rf,
+                          rfModel2 = modelList[[2]]$rf))
+
+resultsAll
+summary(resultsAll)
+
+dotplot(resultsAll)
