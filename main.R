@@ -7,6 +7,7 @@ library(GGally)
 library(caret)
 library(missForest)
 library(arules)
+library(scales)
 
 source(file = "header.R")
 
@@ -301,7 +302,7 @@ inspect(head(attritionNo, by = "lift", n = 10))
 summary(attritionNo)
 
 
-### Random Additional Usefulness
+### Random Additional Usefulness for presentation
 dfFinal %>%
   ggplot(aes(x = Attrition, y = MonthlyIncome)) +
   geom_boxplot()
@@ -326,7 +327,8 @@ df4 %>%
   ggplot(aes(x = Age_Group, y = attrPct)) +
   geom_col(fill = "#F8766D") +
   geom_text(aes(label = paste0(attrPct, "%")), 
-            vjust = -0.4) +
+            vjust = 1.3,
+            size = 4.8) +
   geom_hline(yintercept = avgAttrRate, 
              color = "red", 
              size = 1.2) +
@@ -335,7 +337,16 @@ df4 %>%
                 label = paste0(avgAttrRate, "%"), 
                 hjust = -0.1,
                 vjust = -0.6)) +
-  theme_minimal()
+  labs(title = "Attrition Rate of different Age Groups", 
+       x = "Age Group", 
+       y = "Attrition Rate (%)") +
+  ylim(0, 60) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size=18, face="bold"),
+    axis.title.x = element_text(color="blue", size=14, face="bold"),
+    axis.title.y = element_text(color="#993333", size=14, face="bold")
+  )
 
 dfFinal3 %>%
   ggplot(aes(x = YearsAtCompany_Group, fill = Attrition)) + 
@@ -362,7 +373,8 @@ dfBT %>%
   ggplot(aes(x = BusinessTravel, y = attrPct)) +
   geom_col(fill = "#F8766D") +
   geom_text(aes(label = paste0(attrPct, "%")), 
-            vjust = -0.4) +
+            vjust = 1.3,
+            size = 4.8) +
   geom_hline(yintercept = avgAttrRate, 
              color = "red", 
              size = 1.2) +
@@ -371,7 +383,17 @@ dfBT %>%
                 label = paste0(avgAttrRate, "%"), 
                 hjust = -0.1,
                 vjust = -0.6)) +
-  theme_minimal()
+  labs(title = "Attrition Rate of different Business Travel Frequency", 
+       x = "Business Travel Frequency", 
+       y = "Attrition Rate (%)") +
+  ylim(0, 60) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size=18, face="bold"),
+    axis.title.x = element_text(color="blue", size=14, face="bold"),
+    axis.title.y = element_text(color="#993333", size=14, face="bold")
+  )
+
 
 ## benchmark and dotplot for ALL models
 resultsAll = resamples(list(treeModel1 = modelList[[1]]$tree,
