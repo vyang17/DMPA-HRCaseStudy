@@ -7,7 +7,6 @@ library(GGally)
 library(caret)
 library(missForest)
 library(arules)
-library(scales)
 
 source(file = "header.R")
 
